@@ -12,6 +12,7 @@ pub struct Candidate {
 /// Scan `dirs` in order, returning executables deduped by name —
 /// first occurrence in PATH order wins, the same shadowing rule `which` uses.
 /// Unreadable or missing dirs are silently skipped.
+/// Individual entries that cannot be read within an accessible dir are also skipped.
 pub fn scan(dirs: &[PathBuf]) -> Vec<Candidate> {
     let mut seen = HashSet::new();
     let mut out = Vec::new();
@@ -92,6 +93,21 @@ mod tests {
         ]);
         assert_eq!(got.len(), 1);
         assert_eq!(got[0].name, "ls");
+    }
+
+    #[test]
+    fn symlink_to_executable_is_included() {
+        let tmp = TempDir::new().unwrap();
+        let target = TempDir::new().unwrap();
+        fake_bin(target.path(), "python3");
+        std::os::unix::fs::symlink(
+            target.path().join("python3"),
+            tmp.path().join("python3"),
+        )
+        .unwrap();
+        let got = scan(&[tmp.path().to_path_buf()]);
+        assert_eq!(got.len(), 1);
+        assert_eq!(got[0].name, "python3");
     }
 
     #[test]
