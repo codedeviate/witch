@@ -12,6 +12,8 @@ and commit messages follow [Conventional Commits](https://www.conventionalcommit
 
 - README, MIT LICENSE, and full crate metadata for crates.io and Homebrew
   distribution
+- Available via the `codedeviate/cli` Homebrew tap —
+  `brew install codedeviate/cli/witch` (builds from source)
 
 ### Changed
 
