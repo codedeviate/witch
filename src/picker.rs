@@ -1,5 +1,5 @@
 use crate::matcher::Ranked;
-use dialoguer::{theme::ColorfulTheme, Select};
+use dialoguer::{Select, theme::ColorfulTheme};
 
 /// Menu labels: one absolute path per candidate, best first.
 pub fn labels(ranked: &[Ranked]) -> Vec<String> {
@@ -54,6 +54,9 @@ mod tests {
                 score: 0.87,
             },
         ];
-        assert_eq!(labels(&ranked), vec!["/usr/bin/grep", "/usr/local/bin/grip"]);
+        assert_eq!(
+            labels(&ranked),
+            vec!["/usr/bin/grep", "/usr/local/bin/grip"]
+        );
     }
 }

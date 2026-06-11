@@ -17,7 +17,9 @@ pub fn scan(dirs: &[PathBuf]) -> Vec<Candidate> {
     let mut seen = HashSet::new();
     let mut out = Vec::new();
     for dir in dirs {
-        let Ok(entries) = fs::read_dir(dir) else { continue };
+        let Ok(entries) = fs::read_dir(dir) else {
+            continue;
+        };
         let mut found: Vec<Candidate> = entries
             .flatten()
             .filter_map(|entry| {
@@ -100,11 +102,8 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let target = TempDir::new().unwrap();
         fake_bin(target.path(), "python3");
-        std::os::unix::fs::symlink(
-            target.path().join("python3"),
-            tmp.path().join("python3"),
-        )
-        .unwrap();
+        std::os::unix::fs::symlink(target.path().join("python3"), tmp.path().join("python3"))
+            .unwrap();
         let got = scan(&[tmp.path().to_path_buf()]);
         assert_eq!(got.len(), 1);
         assert_eq!(got[0].name, "python3");
