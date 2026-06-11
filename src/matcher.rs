@@ -2,6 +2,9 @@ use crate::path_scan::Candidate;
 use strsim::jaro_winkler;
 
 pub const SCORE_FLOOR: f64 = 0.7;
+/// Threshold comparisons use `score + THRESHOLD < reference` form; exact
+/// boundary equality is subject to IEEE 754 rounding, so synthetic tests
+/// should avoid scores that differ by exactly these values.
 pub const TOP_BAND: f64 = 0.10;
 pub const CLIFF_DROP: f64 = 0.05;
 pub const MAX_RESULTS: usize = 10;
@@ -49,15 +52,15 @@ fn apply_cliff(sorted: Vec<Ranked>) -> Vec<Ranked> {
         if out.len() >= MAX_RESULTS {
             break;
         }
-        if let Some(first) = out.first() {
-            if first.score - r.score > TOP_BAND {
-                break;
-            }
+        if let Some(first) = out.first()
+            && r.score + TOP_BAND < first.score
+        {
+            break;
         }
-        if let Some(last) = out.last() {
-            if last.score - r.score > CLIFF_DROP {
-                break;
-            }
+        if let Some(last) = out.last()
+            && r.score + CLIFF_DROP < last.score
+        {
+            break;
         }
         out.push(r);
     }
@@ -129,6 +132,8 @@ mod tests {
 
     #[test]
     fn equal_scores_tie_break_alphabetically() {
+        // "grap" has identical JW distance to "grep" and "grip"
+        // (same matched chars g,r,p and same 2-char prefix), so scores tie.
         let c = cands(&["grip", "grep"]);
         let got = rank("grap", &c);
         assert_eq!(got.len(), 2);
