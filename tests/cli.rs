@@ -163,10 +163,11 @@ fn examples_flag_prints_examples_without_command_argument() {
 }
 
 #[test]
-fn pick_flag_conflicts_with_all_and_first() {
+fn pick_flag_conflicts_with_all_first_and_quiet() {
     let tmp = TempDir::new().unwrap();
     witch(tmp.path()).args(["-i", "-a", "ls"]).assert().code(2);
     witch(tmp.path()).args(["-i", "-1", "ls"]).assert().code(2);
+    witch(tmp.path()).args(["-i", "-q", "ls"]).assert().code(2);
 }
 
 #[test]
