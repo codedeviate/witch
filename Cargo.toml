@@ -1,7 +1,27 @@
 [package]
-name = "witch"
-version = "0.1.0"
+name = "witch-cli"
+version = "0.1.1"
 edition = "2024"
+rust-version = "1.85"
+description = "A typo-tolerant which: fuzzy-matches command names against PATH executables and prints which-style paths"
+license = "MIT"
+authors = ["Thomas Björk <codedv8@gmail.com>"]
+homepage = "https://github.com/codedeviate/witch"
+repository = "https://github.com/codedeviate/witch"
+documentation = "https://github.com/codedeviate/witch#readme"
+readme = "README.md"
+keywords = ["which", "fuzzy", "typo", "search", "command-line"]
+categories = ["command-line-utilities"]
+exclude = [
+    ".claude/",
+    ".git/",
+    ".github/",
+    "/.gitignore",
+]
+
+[[bin]]
+name = "witch"
+path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4.6.1", features = ["derive"] }

@@ -742,8 +742,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "witch"
-version = "0.1.0"
+name = "witch-cli"
+version = "0.1.1"
 dependencies = [
  "assert_cmd",
  "clap",

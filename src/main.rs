@@ -9,7 +9,7 @@ use std::process::ExitCode;
 
 /// A fuzzy `which`: finds commands on PATH even when you misspell them.
 #[derive(Parser, Debug)]
-#[command(version, about)]
+#[command(name = "witch", version, about)]
 struct Cli {
     /// Print only the best match
     #[arg(short = '1', long = "first", conflicts_with = "all")]
