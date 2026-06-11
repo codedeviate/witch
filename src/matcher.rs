@@ -1,7 +1,10 @@
 use crate::path_scan::Candidate;
 use strsim::jaro_winkler;
 
-pub const SCORE_FLOOR: f64 = 0.7;
+/// Minimum Jaro-Winkler score to count as a match. 0.8 (rather than 0.7)
+/// because very short command names (xz, ls, cc) otherwise score above the
+/// floor against unrelated queries — e.g. jw("xyzzyqq", "xz") ≈ 0.79.
+pub const SCORE_FLOOR: f64 = 0.8;
 /// Threshold comparisons use `score + THRESHOLD < reference` form; exact
 /// boundary equality is subject to IEEE 754 rounding, so synthetic tests
 /// should avoid scores that differ by exactly these values.
@@ -119,6 +122,14 @@ mod tests {
     fn unrelated_names_fall_below_floor() {
         let c = cands(&["ls", "cat"]);
         let got = rank("kubernetes", &c);
+        assert!(got.is_empty());
+    }
+
+    #[test]
+    fn gibberish_does_not_match_short_command_names() {
+        // jw("xyzzyqq", "xz") ≈ 0.79 — must stay below SCORE_FLOOR.
+        let c = cands(&["xz"]);
+        let got = rank("xyzzyqq", &c);
         assert!(got.is_empty());
     }
 
