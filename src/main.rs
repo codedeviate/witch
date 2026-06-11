@@ -1,5 +1,6 @@
 mod matcher;
 mod path_scan;
+mod picker;
 
 use clap::Parser;
 use std::io::IsTerminal;
@@ -17,6 +18,10 @@ struct Cli {
     /// Print all candidates even when stdout is not a TTY
     #[arg(short = 'a', long = "all")]
     all: bool,
+
+    /// Interactively pick from the candidates
+    #[arg(short = 'i', long = "pick")]
+    pick: bool,
 
     /// No output, exit code only
     #[arg(short = 'q', long = "quiet")]
@@ -67,7 +72,12 @@ fn main() -> ExitCode {
         if cli.quiet {
             continue;
         }
-        if single {
+        if cli.pick && ranked.len() > 1 {
+            match picker::pick(ranked) {
+                Some(r) => println!("{}", r.candidate.path.display()),
+                None => all_found = false,
+            }
+        } else if single {
             println!("{}", ranked[0].candidate.path.display());
         } else {
             for r in &ranked {
