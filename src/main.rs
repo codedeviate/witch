@@ -20,7 +20,7 @@ struct Cli {
     all: bool,
 
     /// Interactively pick from the candidates
-    #[arg(short = 'i', long = "pick")]
+    #[arg(short = 'i', long = "pick", conflicts_with_all = ["all", "first"])]
     pick: bool,
 
     /// No output, exit code only

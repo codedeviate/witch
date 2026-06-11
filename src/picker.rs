@@ -10,17 +10,23 @@ pub fn labels(ranked: &[Ranked]) -> Vec<String> {
 }
 
 /// Show a select menu (rendered on stderr, so stdout stays clean for
-/// command substitution). Returns None if the user cancels (Esc/q/Ctrl-C).
+/// command substitution). Returns None if the user cancels (Esc/q/Ctrl-C)
+/// or the menu cannot render; render failures are reported on stderr.
 pub fn pick(ranked: Vec<Ranked>) -> Option<Ranked> {
     let items = labels(&ranked);
-    let choice = Select::with_theme(&ColorfulTheme::default())
+    match Select::with_theme(&ColorfulTheme::default())
         .with_prompt("witch: pick a command")
         .items(&items)
         .default(0)
         .interact_opt()
-        .ok()
-        .flatten()?;
-    ranked.into_iter().nth(choice)
+    {
+        Ok(Some(choice)) => ranked.into_iter().nth(choice),
+        Ok(None) => None,
+        Err(e) => {
+            eprintln!("witch: picker unavailable: {e}");
+            None
+        }
+    }
 }
 
 #[cfg(test)]

@@ -161,3 +161,22 @@ fn examples_flag_prints_examples_without_command_argument() {
         .success()
         .stdout(predicate::str::contains("witch gerp"));
 }
+
+#[test]
+fn pick_flag_conflicts_with_all_and_first() {
+    let tmp = TempDir::new().unwrap();
+    witch(tmp.path()).args(["-i", "-a", "ls"]).assert().code(2);
+    witch(tmp.path()).args(["-i", "-1", "ls"]).assert().code(2);
+}
+
+#[test]
+fn pick_with_single_match_skips_menu_and_prints_path() {
+    let tmp = TempDir::new().unwrap();
+    fake_bin(tmp.path(), "grep");
+    // Exact match yields one candidate; -i must not attempt a menu.
+    witch(tmp.path())
+        .args(["-i", "grep"])
+        .assert()
+        .success()
+        .stdout(format!("{}\n", tmp.path().join("grep").display()));
+}
