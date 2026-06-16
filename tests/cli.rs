@@ -332,3 +332,22 @@ fn skip_tilde_skips_path_entries_under_home() {
         format!("{}\n", other.path().join("grep").display())
     );
 }
+
+#[test]
+fn gnu_alias_function_flags_are_accepted_and_search_still_runs() {
+    let tmp = TempDir::new().unwrap();
+    fake_bin(tmp.path(), "grep");
+    // The canonical GNU wrapper passes these; witch must accept them (not
+    // error) and still perform the directory search.
+    witch(tmp.path())
+        .args([
+            "--read-alias",
+            "--skip-alias",
+            "--read-functions",
+            "--skip-functions",
+            "grep",
+        ])
+        .assert()
+        .success()
+        .stdout(format!("{}\n", tmp.path().join("grep").display()));
+}

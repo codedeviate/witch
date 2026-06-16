@@ -62,6 +62,23 @@ struct Cli {
     #[arg(long = "tty-only")]
     tty_only: bool,
 
+    /// Accepted for GNU which wrapper compatibility; witch does not parse
+    /// shell aliases, so this is a no-op (directory search still runs).
+    #[arg(long = "read-alias")]
+    read_alias: bool,
+
+    /// Accepted for GNU which compatibility (no-op)
+    #[arg(long = "skip-alias")]
+    skip_alias: bool,
+
+    /// Accepted for GNU which compatibility (no-op)
+    #[arg(long = "read-functions")]
+    read_functions: bool,
+
+    /// Accepted for GNU which compatibility (no-op)
+    #[arg(long = "skip-functions")]
+    skip_functions: bool,
+
     /// Command name(s) to look up
     #[arg(required_unless_present = "examples")]
     commands: Vec<String>,
@@ -90,6 +107,7 @@ EXAMPLES:
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
+    let _ = (cli.read_alias, cli.skip_alias, cli.read_functions, cli.skip_functions);
     if cli.examples {
         print!("{EXAMPLES}");
         return ExitCode::SUCCESS;
