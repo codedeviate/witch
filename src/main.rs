@@ -8,7 +8,6 @@ use std::io::IsTerminal;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use crate::path_scan::Candidate;
-extern crate libc;
 
 /// A fuzzy `which`: finds commands on PATH even when you misspell them.
 #[derive(Parser, Debug)]
