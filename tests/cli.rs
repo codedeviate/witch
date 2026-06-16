@@ -308,3 +308,27 @@ fn show_tilde_rewrites_home_prefix() {
     assert!(out.status.success());
     assert_eq!(String::from_utf8_lossy(&out.stdout), "~/bin/uniquecmd\n");
 }
+
+#[test]
+fn skip_tilde_skips_path_entries_under_home() {
+    let home = TempDir::new().unwrap();
+    let home_bin = home.path().join("bin");
+    std::fs::create_dir(&home_bin).unwrap();
+    fake_bin(&home_bin, "grep");
+    let other = TempDir::new().unwrap();
+    fake_bin(other.path(), "grep");
+    // PATH: $HOME/bin first, then `other`. --skip-tilde drops the $HOME entry,
+    // so the match comes from `other`.
+    let path = format!("{}:{}", home_bin.display(), other.path().display());
+    let out = std::process::Command::new(assert_cmd::cargo::cargo_bin("witch"))
+        .env("HOME", home.path())
+        .env("PATH", path)
+        .args(["--skip-tilde", "grep"])
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    assert_eq!(
+        String::from_utf8_lossy(&out.stdout),
+        format!("{}\n", other.path().join("grep").display())
+    );
+}

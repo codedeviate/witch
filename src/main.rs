@@ -58,7 +58,7 @@ struct Cli {
     #[arg(long = "show-tilde")]
     show_tilde: bool,
 
-    /// Honor display flags only when stdout is a TTY
+    /// Disable --show-dot/--show-tilde when stdout is not a TTY
     #[arg(long = "tty-only")]
     tty_only: bool,
 
@@ -98,9 +98,9 @@ fn main() -> ExitCode {
     let dirs: Vec<PathBuf> = std::env::var_os("PATH")
         .map(|p| std::env::split_paths(&p).collect())
         .unwrap_or_default();
-    let single = cli.first || (!cli.all && !std::io::stdout().is_terminal());
-
     let is_tty = std::io::stdout().is_terminal();
+    let single = cli.first || (!cli.all && !is_tty);
+
     // `--tty-only`: when stdout is not a TTY, drop display niceties.
     let display_active = !(cli.tty_only && !is_tty);
     let show_dot = cli.show_dot && display_active;
@@ -110,7 +110,8 @@ fn main() -> ExitCode {
     let pick = cli.pick && display_active;
 
     let home_env = std::env::var_os("HOME").map(PathBuf::from);
-    // $HOME drives --skip-tilde regardless of user.
+    // $HOME drives --skip-tilde regardless of user; cloned because
+    // display_home below consumes home_env.
     let skip_home = home_env.clone();
     // --show-tilde is ignored when running as root (euid == 0).
     let euid = unsafe { libc::geteuid() };
