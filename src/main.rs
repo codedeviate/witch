@@ -8,6 +8,7 @@ use std::io::IsTerminal;
 use std::path::PathBuf;
 use std::process::ExitCode;
 use crate::path_scan::Candidate;
+extern crate libc;
 
 /// A fuzzy `which`: finds commands on PATH even when you misspell them.
 #[derive(Parser, Debug)]
@@ -41,6 +42,26 @@ struct Cli {
     /// Auto-enabled when the binary is invoked as `which`.
     #[arg(long)]
     strict: bool,
+
+    /// Skip PATH entries that start with `.`
+    #[arg(long = "skip-dot")]
+    skip_dot: bool,
+
+    /// Skip PATH entries that start with `~` and entries under $HOME
+    #[arg(long = "skip-tilde")]
+    skip_tilde: bool,
+
+    /// Print `./prog` for dot-relative PATH entries instead of absolutizing
+    #[arg(long = "show-dot")]
+    show_dot: bool,
+
+    /// Print `~/...` for matches under $HOME (ignored when run as root)
+    #[arg(long = "show-tilde")]
+    show_tilde: bool,
+
+    /// Honor display flags only when stdout is a TTY
+    #[arg(long = "tty-only")]
+    tty_only: bool,
 
     /// Command name(s) to look up
     #[arg(required_unless_present = "examples")]
@@ -80,13 +101,21 @@ fn main() -> ExitCode {
         .unwrap_or_default();
     let single = cli.first || (!cli.all && !std::io::stdout().is_terminal());
 
-    // Neutral until Task 6 wires the GNU directory flags.
-    let skip_dot = false;
-    let skip_tilde = false;
-    let show_dot = false;
-    let show_tilde = false;
-    let skip_home: Option<PathBuf> = None;
-    let display_home: Option<PathBuf> = None;
+    let is_tty = std::io::stdout().is_terminal();
+    // `--tty-only`: when stdout is not a TTY, drop display niceties.
+    let display_active = !(cli.tty_only && !is_tty);
+    let show_dot = cli.show_dot && display_active;
+    let show_tilde = cli.show_tilde && display_active;
+    let skip_dot = cli.skip_dot;
+    let skip_tilde = cli.skip_tilde;
+    let pick = cli.pick && display_active;
+
+    let home_env = std::env::var_os("HOME").map(PathBuf::from);
+    // $HOME drives --skip-tilde regardless of user.
+    let skip_home = home_env.clone();
+    // --show-tilde is ignored when running as root (euid == 0).
+    let euid = unsafe { libc::geteuid() };
+    let display_home = if euid == 0 { None } else { home_env };
     let strict = cli.strict || invoked_as_which();
 
     // Fuzzy candidate list is only scanned if an exact lookup misses.
@@ -137,7 +166,7 @@ fn main() -> ExitCode {
         if quiet {
             continue;
         }
-        if cli.pick && ranked.len() > 1 {
+        if pick && ranked.len() > 1 {
             match picker::pick(ranked) {
                 Some(r) => println!("{}", r.candidate.path.display()),
                 None => all_found = false,

@@ -262,3 +262,49 @@ fn invoked_as_which_is_strict() {
     assert!(out.stdout.is_empty());
     assert!(out.stderr.is_empty());
 }
+
+#[test]
+fn skip_dot_skips_dot_relative_path_entries() {
+    let tmp = TempDir::new().unwrap();
+    fake_bin(tmp.path(), "grep");
+    // PATH has a dot entry and the real dir; --skip-dot ignores `.`-prefixed.
+    let path = format!(".:{}", tmp.path().display());
+    Command::cargo_bin("witch")
+        .unwrap()
+        .env("PATH", path)
+        .args(["--skip-dot", "grep"])
+        .assert()
+        .success()
+        .stdout(format!("{}\n", tmp.path().join("grep").display()));
+}
+
+#[test]
+fn show_dot_prints_relative_form_for_dot_entry() {
+    let tmp = TempDir::new().unwrap();
+    fake_bin(tmp.path(), "uniquecmd");
+    // Run with cwd = tmp and PATH = "." so the match is dot-relative.
+    let out = std::process::Command::new(assert_cmd::cargo::cargo_bin("witch"))
+        .current_dir(tmp.path())
+        .env("PATH", ".")
+        .args(["--show-dot", "uniquecmd"])
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    assert_eq!(String::from_utf8_lossy(&out.stdout), "./uniquecmd\n");
+}
+
+#[test]
+fn show_tilde_rewrites_home_prefix() {
+    let home = TempDir::new().unwrap();
+    let bin = home.path().join("bin");
+    std::fs::create_dir(&bin).unwrap();
+    fake_bin(&bin, "uniquecmd");
+    let out = std::process::Command::new(assert_cmd::cargo::cargo_bin("witch"))
+        .env("HOME", home.path())
+        .env("PATH", &bin)
+        .args(["--show-tilde", "uniquecmd"])
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    assert_eq!(String::from_utf8_lossy(&out.stdout), "~/bin/uniquecmd\n");
+}
