@@ -17,7 +17,7 @@ struct Cli {
     #[arg(short = '1', long = "first", conflicts_with = "all")]
     first: bool,
 
-    /// Print all candidates even when stdout is not a TTY
+    /// List all matches, including PATH duplicates, even when stdout is not a TTY
     #[arg(short = 'a', long = "all")]
     all: bool,
 

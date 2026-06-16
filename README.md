@@ -89,13 +89,13 @@ Arguments:
 
 Options:
   -1, --first       Print only the best match
-  -a, --all         List all matches/instances (incl. PATH duplicates)
+  -a, --all         List all matches, including PATH duplicates, even when not a TTY
   -q, --quiet       No output, exit code only
   -s                Silent; alias of --quiet (BSD which -s)
   -i, --pick        Interactively pick from the candidates
       --strict      Disable fuzzy matching; behave byte-for-byte like which
       --skip-dot    Skip PATH entries that start with `.`
-      --skip-tilde  Skip PATH entries starting with `~` and entries under $HOME
+      --skip-tilde  Skip PATH entries that start with `~` and entries under $HOME
       --show-dot    Print ./prog for dot-relative PATH entries
       --show-tilde  Print ~/... for matches under $HOME (ignored as root)
       --tty-only    Honor --show-dot/--show-tilde only when stdout is a TTY
