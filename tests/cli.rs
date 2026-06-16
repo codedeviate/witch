@@ -174,7 +174,8 @@ fn pick_flag_conflicts_with_all_first_and_quiet() {
 fn pick_with_single_match_skips_menu_and_prints_path() {
     let tmp = TempDir::new().unwrap();
     fake_bin(tmp.path(), "grep");
-    // Exact match yields one candidate; -i must not attempt a menu.
+    // Exact match resolves via find_exact and bypasses the picker entirely;
+    // -i must not attempt a menu.
     witch(tmp.path())
         .args(["-i", "grep"])
         .assert()
@@ -198,4 +199,23 @@ fn all_flag_shows_duplicate_instances_for_exact_match() {
             "{p}\n{p}\n",
             p = tmp.path().join("ls").display()
         ));
+}
+
+#[test]
+fn silent_flag_suppresses_output_like_quiet() {
+    let tmp = TempDir::new().unwrap();
+    fake_bin(tmp.path(), "grep");
+    witch(tmp.path()).args(["-s", "grep"]).assert().success().stdout("");
+    witch(tmp.path())
+        .args(["-s", "doesnotexist"])
+        .assert()
+        .code(1)
+        .stdout("")
+        .stderr("");
+}
+
+#[test]
+fn silent_flag_conflicts_with_pick() {
+    let tmp = TempDir::new().unwrap();
+    witch(tmp.path()).args(["-i", "-s", "ls"]).assert().code(2);
 }

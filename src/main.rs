@@ -22,12 +22,16 @@ struct Cli {
     all: bool,
 
     /// Interactively pick from the candidates
-    #[arg(short = 'i', long = "pick", conflicts_with_all = ["all", "first", "quiet"])]
+    #[arg(short = 'i', long = "pick", conflicts_with_all = ["all", "first", "quiet", "silent"])]
     pick: bool,
 
     /// No output, exit code only
     #[arg(short = 'q', long = "quiet")]
     quiet: bool,
+
+    /// Silent; no output, exit code only (BSD `which -s`, alias of --quiet)
+    #[arg(short = 's')]
+    silent: bool,
 
     /// Print usage examples and exit
     #[arg(long)]
@@ -55,6 +59,7 @@ fn main() -> ExitCode {
         print!("{EXAMPLES}");
         return ExitCode::SUCCESS;
     }
+    let quiet = cli.quiet || cli.silent;
     let dirs: Vec<PathBuf> = std::env::var_os("PATH")
         .map(|p| std::env::split_paths(&p).collect())
         .unwrap_or_default();
@@ -84,7 +89,9 @@ fn main() -> ExitCode {
         );
 
         if !matches.is_empty() {
-            if !cli.quiet {
+            if !quiet {
+                // find_exact returns at most one match when !all, so this also
+                // satisfies -1/--first; no separate `single` guard is needed here.
                 let to_print = if cli.all { &matches[..] } else { &matches[..1] };
                 for m in to_print {
                     println!(
@@ -106,13 +113,13 @@ fn main() -> ExitCode {
         let candidates = fuzzy.get_or_insert_with(|| path_scan::scan(&dirs));
         let ranked = matcher::rank(query, candidates);
         if ranked.is_empty() {
-            if !cli.quiet {
+            if !quiet {
                 eprintln!("witch: no match for '{query}'");
             }
             all_found = false;
             continue;
         }
-        if cli.quiet {
+        if quiet {
             continue;
         }
         if cli.pick && ranked.len() > 1 {
