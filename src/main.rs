@@ -103,10 +103,14 @@ EXAMPLES:
     $(witch gerp)      command substitution gets exactly one path
     witch -i grap      interactive picker (menu on stderr)
     witch -q gerp      no output, exit code only
+    witch -s grep      silent (BSD which -s), exit code only
+    witch --strict ls  no fuzzy; behaves byte-for-byte like which
+    ln -s witch which  install as a which drop-in (auto-strict)
 ";
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
+    // Suppress dead_code: these flags are no-ops accepted for GNU which compatibility.
     let _ = (cli.read_alias, cli.skip_alias, cli.read_functions, cli.skip_functions);
     if cli.examples {
         print!("{EXAMPLES}");

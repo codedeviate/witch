@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html),
 and commit messages follow [Conventional Commits](https://www.conventionalcommits.org/).
 
+## [0.2.0] - 2026-06-16
+
+### Added
+
+- Drop-in `which` compatibility: accepts the union of BSD and GNU `which` flags
+- `-s` silent flag (BSD `which -s`), an alias of `--quiet`
+- `--strict` mode (also auto-enabled when invoked as `which` via a symlink):
+  disables fuzzy matching for byte-for-byte `which` behavior
+- GNU directory flags: `--skip-dot`, `--skip-tilde`, `--show-dot`,
+  `--show-tilde`, `--tty-only`
+- GNU `--read-alias`/`--skip-alias`/`--read-functions`/`--skip-functions`
+  accepted as no-ops for shell-wrapper compatibility
+
+### Changed
+
+- Exact matches now resolve through a dedicated `which`-style lookup; `-a` lists
+  every instance on `PATH` including duplicates from repeated `PATH` entries
+
 ## [0.1.1] - 2026-06-11
 
 ### Added

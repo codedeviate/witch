@@ -88,13 +88,24 @@ Arguments:
   <COMMANDS>...  Command name(s) to look up
 
 Options:
-  -1, --first     Print only the best match
-  -a, --all       Print all candidates even when stdout is not a TTY
-  -q, --quiet     No output, exit code only
-  -i, --pick      Interactively pick from the candidates
-      --examples  Print usage examples and exit
-  -h, --help      Print help
-  -V, --version   Print version
+  -1, --first       Print only the best match
+  -a, --all         List all matches/instances (incl. PATH duplicates)
+  -q, --quiet       No output, exit code only
+  -s                Silent; alias of --quiet (BSD which -s)
+  -i, --pick        Interactively pick from the candidates
+      --strict      Disable fuzzy matching; behave byte-for-byte like which
+      --skip-dot    Skip PATH entries that start with `.`
+      --skip-tilde  Skip PATH entries starting with `~` and entries under $HOME
+      --show-dot    Print ./prog for dot-relative PATH entries
+      --show-tilde  Print ~/... for matches under $HOME (ignored as root)
+      --tty-only    Honor --show-dot/--show-tilde only when stdout is a TTY
+      --examples    Print usage examples and exit
+  -h, --help        Print help
+  -V, --version     Print version
+
+GNU which's --read-alias/--skip-alias/--read-functions/--skip-functions are
+accepted for wrapper compatibility but are no-ops (witch does not parse shell
+aliases or functions).
 ```
 
 `-1`/`-a`/`-i`/`-q` with contradictory intents conflict (exit 2) instead of
@@ -110,6 +121,16 @@ silently overriding each other: `-1` vs `-a`, and `-i` vs any of `-1`/`-a`/`-q`.
 | `-1` | best match only, regardless of TTY |
 | `-a` | full ranked list, regardless of TTY |
 | `-i` with 2+ candidates | menu on stderr, chosen path on stdout |
+
+### Drop-in `which`
+
+`witch` accepts the union of BSD and GNU `which` flags. To use it as a literal `which` replacement, symlink it under the name `which`:
+
+```bash
+ln -s "$(command -v witch)" ~/.local/bin/which
+```
+
+When invoked as `which`, witch auto-enables **strict mode**: fuzzy matching is disabled and behavior is byte-for-byte `which` — exact lookups only, silent on not-found, exit `0`/`1`. Use `--strict` to get the same behavior under the `witch` name. In strict mode, `-a` lists every instance on `PATH` (including duplicates from repeated `PATH` entries), exactly like BSD `which -a`.
 
 ### How matching works
 
