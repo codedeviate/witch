@@ -80,6 +80,7 @@ fn absolutize(p: &Path) -> PathBuf {
     let mut out = std::env::current_dir().unwrap_or_default();
     for comp in p.components() {
         match comp {
+            std::path::Component::RootDir => out = PathBuf::from("/"),
             std::path::Component::CurDir => {}
             std::path::Component::ParentDir => {
                 out.pop();
@@ -97,6 +98,8 @@ fn absolutize(p: &Path) -> PathBuf {
 /// - `show_tilde`: if the shown path is under `home`, rewrite the prefix to
 ///   `~`. Pass `home = None` (e.g. when euid == 0) to disable.
 pub fn display_path(m: &Match, show_dot: bool, show_tilde: bool, home: Option<&Path>) -> String {
+    // `find_exact` builds `path` as `dir.join(name)`, so `path` is relative
+    // exactly when `dir` is — making this dir-based dot check consistent.
     let is_dot = m.dir.to_string_lossy().starts_with('.');
     let shown: PathBuf = if is_dot && !show_dot {
         absolutize(&m.path)
@@ -241,5 +244,11 @@ mod tests {
         };
         let got = display_path(&m, false, true, None);
         assert_eq!(got, "/home/u/bin/grep");
+    }
+
+    #[test]
+    fn absolutize_handles_absolute_input_without_cwd_prefix() {
+        let got = absolutize(Path::new("/usr/./bin/../bin/grep"));
+        assert_eq!(got, PathBuf::from("/usr/bin/grep"));
     }
 }
