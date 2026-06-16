@@ -42,6 +42,10 @@ best match, so `$(witch gerp)` always expands to exactly one path.
 
 ## Install
 
+Latest release: **[v0.2.0](https://github.com/codedeviate/witch/releases/tag/v0.2.0)** —
+drop-in `which` compatibility (BSD + GNU flag superset and `--strict` mode). All
+methods below install it.
+
 ### Homebrew (macOS / Linuxbrew)
 
 ```bash
