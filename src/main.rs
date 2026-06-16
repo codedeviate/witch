@@ -3,11 +3,11 @@ mod matcher;
 mod path_scan;
 mod picker;
 
+use crate::path_scan::Candidate;
 use clap::Parser;
 use std::io::IsTerminal;
 use std::path::PathBuf;
 use std::process::ExitCode;
-use crate::path_scan::Candidate;
 
 /// A fuzzy `which`: finds commands on PATH even when you misspell them.
 #[derive(Parser, Debug)]
@@ -111,7 +111,12 @@ EXAMPLES:
 fn main() -> ExitCode {
     let cli = Cli::parse();
     // Suppress dead_code: these flags are no-ops accepted for GNU which compatibility.
-    let _ = (cli.read_alias, cli.skip_alias, cli.read_functions, cli.skip_functions);
+    let _ = (
+        cli.read_alias,
+        cli.skip_alias,
+        cli.read_functions,
+        cli.skip_functions,
+    );
     if cli.examples {
         print!("{EXAMPLES}");
         return ExitCode::SUCCESS;
@@ -124,7 +129,7 @@ fn main() -> ExitCode {
     let single = cli.first || (!cli.all && !is_tty);
 
     // `--tty-only`: when stdout is not a TTY, drop display niceties.
-    let display_active = !(cli.tty_only && !is_tty);
+    let display_active = !cli.tty_only || is_tty;
     let show_dot = cli.show_dot && display_active;
     let show_tilde = cli.show_tilde && display_active;
     let skip_dot = cli.skip_dot;

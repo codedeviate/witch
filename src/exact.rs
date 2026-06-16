@@ -193,7 +193,7 @@ mod tests {
         fs::create_dir(&bin).unwrap();
         fake_bin(&bin, "grep");
         let got = find_exact(
-            &[bin.clone()],
+            std::slice::from_ref(&bin),
             "grep",
             true,
             false,
