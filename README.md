@@ -132,6 +132,16 @@ ln -s "$(command -v witch)" ~/.local/bin/which
 
 When invoked as `which`, witch auto-enables **strict mode**: fuzzy matching is disabled and behavior is byte-for-byte `which` — exact lookups only, silent on not-found, exit `0`/`1`. Use `--strict` to get the same behavior under the `witch` name. In strict mode, `-a` lists every instance on `PATH` (including duplicates from repeated `PATH` entries), exactly like BSD `which -a`.
 
+### Compatibility notes
+
+- `--show-dot` and `--show-tilde` apply to **exact** (`which`-style) matches.
+  Fuzzy-fallback results are always printed as plain absolute paths.
+- `--tty-only` gates the display flags **and** the interactive picker: when
+  stdout is not a TTY, `--show-dot`/`--show-tilde` are dropped and `-i` will
+  not render a menu.
+- Under `--strict` (or when invoked as `which`), fuzzy matching is off, so
+  `-i`/`--pick` has nothing to pick from and is effectively a no-op.
+
 ### How matching works
 
 Candidates are every executable on `PATH` (deduped by name, first occurrence

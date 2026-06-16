@@ -195,17 +195,18 @@ fn all_flag_shows_duplicate_instances_for_exact_match() {
         .args(["-a", "ls"])
         .assert()
         .success()
-        .stdout(format!(
-            "{p}\n{p}\n",
-            p = tmp.path().join("ls").display()
-        ));
+        .stdout(format!("{p}\n{p}\n", p = tmp.path().join("ls").display()));
 }
 
 #[test]
 fn silent_flag_suppresses_output_like_quiet() {
     let tmp = TempDir::new().unwrap();
     fake_bin(tmp.path(), "grep");
-    witch(tmp.path()).args(["-s", "grep"]).assert().success().stdout("");
+    witch(tmp.path())
+        .args(["-s", "grep"])
+        .assert()
+        .success()
+        .stdout("");
     witch(tmp.path())
         .args(["-s", "doesnotexist"])
         .assert()
@@ -350,4 +351,57 @@ fn gnu_alias_function_flags_are_accepted_and_search_still_runs() {
         .assert()
         .success()
         .stdout(format!("{}\n", tmp.path().join("grep").display()));
+}
+
+#[test]
+fn fuzzy_fallback_ignores_display_transforms() {
+    let home = TempDir::new().unwrap();
+    let bin = home.path().join("bin");
+    std::fs::create_dir(&bin).unwrap();
+    fake_bin(&bin, "uniquecmd");
+    // Typo -> fuzzy fallback. --show-tilde applies only to exact matches, so
+    // the fuzzy result is printed as an absolute path, not `~/...`.
+    let out = std::process::Command::new(assert_cmd::cargo::cargo_bin("witch"))
+        .env("HOME", home.path())
+        .env("PATH", &bin)
+        .args(["--show-tilde", "uniquecnd"])
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    assert_eq!(
+        String::from_utf8_lossy(&out.stdout),
+        format!("{}\n", bin.join("uniquecmd").display())
+    );
+}
+
+#[test]
+fn tty_only_drops_show_tilde_when_not_a_tty() {
+    let home = TempDir::new().unwrap();
+    let bin = home.path().join("bin");
+    std::fs::create_dir(&bin).unwrap();
+    fake_bin(&bin, "uniquecmd");
+    // assert_cmd pipes stdout (non-TTY); --tty-only must suppress --show-tilde,
+    // so an exact match prints an absolute path rather than `~/...`.
+    let out = std::process::Command::new(assert_cmd::cargo::cargo_bin("witch"))
+        .env("HOME", home.path())
+        .env("PATH", &bin)
+        .args(["--tty-only", "--show-tilde", "uniquecmd"])
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    assert_eq!(
+        String::from_utf8_lossy(&out.stdout),
+        format!("{}\n", bin.join("uniquecmd").display())
+    );
+}
+
+#[test]
+fn empty_path_yields_no_match_without_panic() {
+    Command::cargo_bin("witch")
+        .unwrap()
+        .env("PATH", "")
+        .arg("grep")
+        .assert()
+        .code(1)
+        .stdout("");
 }
