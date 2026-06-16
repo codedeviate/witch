@@ -260,4 +260,5 @@ fn invoked_as_which_is_strict() {
         .unwrap();
     assert_eq!(out.status.code(), Some(1));
     assert!(out.stdout.is_empty());
+    assert!(out.stderr.is_empty());
 }

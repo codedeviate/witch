@@ -53,8 +53,7 @@ fn invoked_as_which() -> bool {
     std::env::args_os()
         .next()
         .map(PathBuf::from)
-        .and_then(|p| p.file_name().map(|n| n.to_string_lossy().into_owned()))
-        .map(|n| n == "which")
+        .and_then(|p| p.file_name().map(|n| n == "which"))
         .unwrap_or(false)
 }
 
