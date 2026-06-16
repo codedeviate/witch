@@ -1,3 +1,4 @@
+mod exact;
 mod matcher;
 mod path_scan;
 mod picker;
