@@ -7,6 +7,7 @@ use clap::Parser;
 use std::io::IsTerminal;
 use std::path::PathBuf;
 use std::process::ExitCode;
+use crate::path_scan::Candidate;
 
 /// A fuzzy `which`: finds commands on PATH even when you misspell them.
 #[derive(Parser, Debug)]
@@ -57,12 +58,53 @@ fn main() -> ExitCode {
     let dirs: Vec<PathBuf> = std::env::var_os("PATH")
         .map(|p| std::env::split_paths(&p).collect())
         .unwrap_or_default();
-    let candidates = path_scan::scan(&dirs);
     let single = cli.first || (!cli.all && !std::io::stdout().is_terminal());
+
+    // Neutral until Task 6 wires the GNU directory flags.
+    let skip_dot = false;
+    let skip_tilde = false;
+    let show_dot = false;
+    let show_tilde = false;
+    let skip_home: Option<PathBuf> = None;
+    let display_home: Option<PathBuf> = None;
+    let strict = false;
+
+    // Fuzzy candidate list is only scanned if an exact lookup misses.
+    let mut fuzzy: Option<Vec<Candidate>> = None;
 
     let mut all_found = true;
     for query in &cli.commands {
-        let ranked = matcher::rank(query, &candidates);
+        let matches = exact::find_exact(
+            &dirs,
+            query,
+            cli.all,
+            skip_dot,
+            skip_tilde,
+            skip_home.as_deref(),
+        );
+
+        if !matches.is_empty() {
+            if !cli.quiet {
+                let to_print = if cli.all { &matches[..] } else { &matches[..1] };
+                for m in to_print {
+                    println!(
+                        "{}",
+                        exact::display_path(m, show_dot, show_tilde, display_home.as_deref())
+                    );
+                }
+            }
+            continue;
+        }
+
+        // No exact match.
+        if strict {
+            all_found = false; // silent, BSD-style
+            continue;
+        }
+
+        // Fuzzy fallback (non-strict only).
+        let candidates = fuzzy.get_or_insert_with(|| path_scan::scan(&dirs));
+        let ranked = matcher::rank(query, candidates);
         if ranked.is_empty() {
             if !cli.quiet {
                 eprintln!("witch: no match for '{query}'");

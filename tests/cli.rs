@@ -181,3 +181,21 @@ fn pick_with_single_match_skips_menu_and_prints_path() {
         .success()
         .stdout(format!("{}\n", tmp.path().join("grep").display()));
 }
+
+#[test]
+fn all_flag_shows_duplicate_instances_for_exact_match() {
+    let tmp = TempDir::new().unwrap();
+    fake_bin(tmp.path(), "ls");
+    // Same dir twice in PATH -> BSD `which -a` prints the path twice.
+    let dup = format!("{p}:{p}", p = tmp.path().display());
+    Command::cargo_bin("witch")
+        .unwrap()
+        .env("PATH", dup)
+        .args(["-a", "ls"])
+        .assert()
+        .success()
+        .stdout(format!(
+            "{p}\n{p}\n",
+            p = tmp.path().join("ls").display()
+        ));
+}
