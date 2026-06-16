@@ -19,7 +19,9 @@ pub fn is_executable(path: &Path) -> bool {
 }
 
 /// Should this PATH entry be skipped given the skip flags?
-/// `skip_dot` drops entries whose textual form starts with `.`.
+/// `skip_dot` drops entries whose textual form starts with `.` (i.e.
+/// relative paths beginning with a dot; internal path components are not
+/// inspected).
 /// `skip_tilde` drops entries that start with `~` and entries equal to or
 /// under `home`.
 fn skip_dir(dir: &Path, skip_dot: bool, skip_tilde: bool, home: Option<&Path>) -> bool {
@@ -69,6 +71,46 @@ pub fn find_exact(
         }
     }
     out
+}
+
+/// Resolve `p` against the current directory, dropping `.` components and
+/// applying `..` so the result has no `/./` noise. Used to turn a
+/// dot-relative PATH match into a clean absolute path.
+fn absolutize(p: &Path) -> PathBuf {
+    let mut out = std::env::current_dir().unwrap_or_default();
+    for comp in p.components() {
+        match comp {
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                out.pop();
+            }
+            other => out.push(other.as_os_str()),
+        }
+    }
+    out
+}
+
+/// Render a match for printing.
+/// - default: a dot-relative entry (`./bin`) is absolutized against the
+///   current directory; absolute entries are printed as-is.
+/// - `show_dot`: keep the dot-relative form (`./bin/grep`).
+/// - `show_tilde`: if the shown path is under `home`, rewrite the prefix to
+///   `~`. Pass `home = None` (e.g. when euid == 0) to disable.
+pub fn display_path(m: &Match, show_dot: bool, show_tilde: bool, home: Option<&Path>) -> String {
+    let is_dot = m.dir.to_string_lossy().starts_with('.');
+    let shown: PathBuf = if is_dot && !show_dot {
+        absolutize(&m.path)
+    } else {
+        m.path.clone()
+    };
+
+    if show_tilde
+        && let Some(h) = home
+        && let Ok(rest) = shown.strip_prefix(h)
+    {
+        return format!("~/{}", rest.display());
+    }
+    shown.display().to_string()
 }
 
 #[cfg(test)]
@@ -156,5 +198,48 @@ mod tests {
             Some(home.path()),
         );
         assert!(got.is_empty());
+    }
+
+    #[test]
+    fn display_default_absolutizes_dot_relative_paths() {
+        let m = Match {
+            path: PathBuf::from("./bin/grep"),
+            dir: PathBuf::from("./bin"),
+        };
+        let got = display_path(&m, false, false, None);
+        assert!(got.starts_with('/'), "expected absolute path, got {got}");
+        assert!(got.ends_with("/bin/grep"), "got {got}");
+        assert!(!got.contains("/./"), "should be normalized, got {got}");
+    }
+
+    #[test]
+    fn show_dot_keeps_relative_form() {
+        let m = Match {
+            path: PathBuf::from("./bin/grep"),
+            dir: PathBuf::from("./bin"),
+        };
+        let got = display_path(&m, true, false, None);
+        assert_eq!(got, "./bin/grep");
+    }
+
+    #[test]
+    fn show_tilde_rewrites_home_prefix() {
+        let home = PathBuf::from("/home/u");
+        let m = Match {
+            path: PathBuf::from("/home/u/bin/grep"),
+            dir: PathBuf::from("/home/u/bin"),
+        };
+        let got = display_path(&m, false, true, Some(&home));
+        assert_eq!(got, "~/bin/grep");
+    }
+
+    #[test]
+    fn show_tilde_ignored_when_home_is_none_root() {
+        let m = Match {
+            path: PathBuf::from("/home/u/bin/grep"),
+            dir: PathBuf::from("/home/u/bin"),
+        };
+        let got = display_path(&m, false, true, None);
+        assert_eq!(got, "/home/u/bin/grep");
     }
 }
