@@ -50,3 +50,7 @@ and commit messages follow [Conventional Commits](https://www.conventionalcommit
 - `-1/--first`, `-a/--all`, `-q/--quiet`, `-i/--pick` flags
 - `--examples` flag, plus clap-generated `-h/--help` and `-V/--version`
 - Interactive picker rendered on stderr so it works inside command substitution
+
+[0.2.0]: https://github.com/codedeviate/witch/releases/tag/v0.2.0
+[0.1.1]: https://github.com/codedeviate/witch/releases/tag/v0.1.1
+[0.1.0]: https://github.com/codedeviate/witch/releases/tag/v0.1.0
