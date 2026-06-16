@@ -219,3 +219,45 @@ fn silent_flag_conflicts_with_pick() {
     let tmp = TempDir::new().unwrap();
     witch(tmp.path()).args(["-i", "-s", "ls"]).assert().code(2);
 }
+
+#[test]
+fn strict_flag_disables_fuzzy_and_fails_silently() {
+    let tmp = TempDir::new().unwrap();
+    fake_bin(tmp.path(), "grep");
+    // A typo that fuzzy would resolve must fail silently under --strict.
+    witch(tmp.path())
+        .args(["--strict", "gerp"])
+        .assert()
+        .code(1)
+        .stdout("")
+        .stderr("");
+}
+
+#[test]
+fn strict_flag_still_finds_exact_matches() {
+    let tmp = TempDir::new().unwrap();
+    fake_bin(tmp.path(), "grep");
+    witch(tmp.path())
+        .args(["--strict", "grep"])
+        .assert()
+        .success()
+        .stdout(format!("{}\n", tmp.path().join("grep").display()));
+}
+
+#[test]
+fn invoked_as_which_is_strict() {
+    let tmp = TempDir::new().unwrap();
+    fake_bin(tmp.path(), "grep");
+    let bin = assert_cmd::cargo::cargo_bin("witch");
+    let linkdir = TempDir::new().unwrap();
+    let link = linkdir.path().join("which");
+    std::os::unix::fs::symlink(&bin, &link).unwrap();
+    // Invoked as `which`, a typo must not fuzzy-match.
+    let out = std::process::Command::new(&link)
+        .arg("gerp")
+        .env("PATH", tmp.path())
+        .output()
+        .unwrap();
+    assert_eq!(out.status.code(), Some(1));
+    assert!(out.stdout.is_empty());
+}

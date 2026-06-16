@@ -29,7 +29,7 @@ struct Cli {
     #[arg(short = 'q', long = "quiet")]
     quiet: bool,
 
-    /// Silent; no output, exit code only (BSD `which -s`, alias of --quiet)
+    /// No output, exit code only (BSD `which -s`)
     #[arg(short = 's')]
     silent: bool,
 
@@ -37,9 +37,25 @@ struct Cli {
     #[arg(long)]
     examples: bool,
 
+    /// Disable fuzzy matching; behave byte-for-byte like which.
+    /// Auto-enabled when the binary is invoked as `which`.
+    #[arg(long)]
+    strict: bool,
+
     /// Command name(s) to look up
     #[arg(required_unless_present = "examples")]
     commands: Vec<String>,
+}
+
+/// True when argv[0]'s file name is exactly `which` (e.g. via a symlink),
+/// so a `which`-named binary defaults to strict, real-which behavior.
+fn invoked_as_which() -> bool {
+    std::env::args_os()
+        .next()
+        .map(PathBuf::from)
+        .and_then(|p| p.file_name().map(|n| n.to_string_lossy().into_owned()))
+        .map(|n| n == "which")
+        .unwrap_or(false)
 }
 
 const EXAMPLES: &str = "\
@@ -72,7 +88,7 @@ fn main() -> ExitCode {
     let show_tilde = false;
     let skip_home: Option<PathBuf> = None;
     let display_home: Option<PathBuf> = None;
-    let strict = false;
+    let strict = cli.strict || invoked_as_which();
 
     // Fuzzy candidate list is only scanned if an exact lookup misses.
     let mut fuzzy: Option<Vec<Candidate>> = None;
